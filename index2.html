@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coin Tosser</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    h1 {
+      margin-bottom: 40px;
+      font-size: 2rem;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    .coin-container {
+      perspective: 1200px;
+    }
+
+    .coin {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 2s cubic-bezier(0.23, 1, 0.32, 1);
+      cursor: pointer;
+      animation: glow 2s infinite alternate;
+    }
+
+    .face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      backface-visibility: hidden;
+      background: radial-gradient(circle at center, #ffd700, #b8860b);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #111;
+      font-size: 2rem;
+      font-weight: bold;
+      box-shadow: inset 0 0 15px rgba(255,255,255,0.2), 0 0 30px rgba(255,215,0,0.6);
+      border: 4px solid #fff8dc;
+    }
+
+    .heads {
+      transform: rotateY(0deg);
+    }
+
+    .tails {
+      transform: rotateY(180deg);
+    }
+
+    @keyframes glow {
+      0% {
+        box-shadow: 0 0 20px rgba(255,215,0,0.3);
+      }
+      100% {
+        box-shadow: 0 0 40px rgba(255,215,0,0.7);
+      }
+    }
+
+    .result {
+      margin-top: 30px;
+      font-size: 1.5rem;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    .particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .spark {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: gold;
+      border-radius: 50%;
+      animation: rise 1s ease-out forwards;
+    }
+
+    @keyframes rise {
+      to {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="coin-container">
+    <div class="coin" id="coin">
+      <div class="face heads" id="heads">HEADS</div>
+      <div class="face tails" id="tails">TAILS</div>
+    </div>
+  </div>
+  <div class="result" id="result">Last Toss Was: -</div>
+  <div class="particles" id="particles"></div>
+  <audio id="flipSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_1144e94fb9.mp3?filename=coin-flip-1-184470.mp3"></audio>
+
+  <script>
+    const coin = document.getElementById("coin");
+    const resultDisplay = document.getElementById("result");
+    const particlesContainer = document.getElementById("particles");
+    const flipSound = document.getElementById("flipSound");
+    let isFlipping = false;
+    let previousResult = '-';
+
+    function createParticles() {
+      for (let i = 0; i < 15; i++) {
+        const spark = document.createElement("div");
+        spark.className = "spark";
+        spark.style.left = Math.random() * 100 + "%";
+        spark.style.top = Math.random() * 100 + "%";
+        particlesContainer.appendChild(spark);
+        setTimeout(() => spark.remove(), 1000);
+      }
+    }
+
+    coin.addEventListener("click", () => {
+      if (isFlipping) return;
+      isFlipping = true;
+
+      flipSound.currentTime = 0;
+      flipSound.play();
+
+      const flips = Math.floor(Math.random() * 6) + 5;
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      const rotation = 180 * flips * direction;
+      const result = Math.random() > 0.5 ? "HEADS" : "TAILS";
+
+      coin.style.transform = `rotateY(${rotation}deg)`;
+      createParticles();
+
+      setTimeout(() => {
+        document.getElementById("heads").textContent = result;
+        document.getElementById("tails").textContent = result;
+        resultDisplay.textContent = `Last Toss: ${previousResult}`;
+        previousResult = result;
+        isFlipping = false;
+      }, 2000);
+    });
+  </script>
+</body>
+</html>
