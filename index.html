@@ -10,30 +10,71 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5; /* Light gray background */
+            background-color: #e2e8f0; /* Softer background */
+        }
+
+        /* Keyframes for coin spin animation */
+        @keyframes spin {
+            0% { transform: rotateY(0deg); }
+            25% { transform: rotateY(360deg); }
+            50% { transform: rotateY(720deg); }
+            75% { transform: rotateY(1080deg); }
+            100% { transform: rotateY(1440deg); } /* Multiple full spins */
+        }
+
+        /* Keyframes for result text fade-in */
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .coin-spinning {
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; /* Elastic spin effect */
+        }
+
+        .result-animated {
+            animation: fadeInScale 0.5s ease-out forwards;
+        }
+
+        /* Custom styling for the coin display to add depth */
+        #coin-display {
+            perspective: 1000px; /* For 3D transform */
+            transform-style: preserve-3d; /* Allows child elements to be 3D */
+            transition: background-color 0.3s ease-in-out; /* Smooth color change */
+        }
+
+        /* Style for the SVG elements to ensure text is centered */
+        #coin-svg text {
+            user-select: none; /* Prevent text selection on the coin */
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-gray-200">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Coin Toss Simulator</h1>
+    <div class="bg-gradient-to-br from-white to-gray-100 p-10 rounded-3xl shadow-2xl max-w-md w-full text-center border border-gray-200 transform hover:scale-105 transition-transform duration-300 ease-in-out">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-8 tracking-tight">Toss the coin</h1>
 
-        <!-- Coin image/icon placeholder -->
-        <div id="coin-display" class="w-24 h-24 mx-auto mb-8 flex items-center justify-center text-5xl bg-yellow-400 text-white rounded-full shadow-inner">
-            <!-- Placeholder for coin icon/text -->
-            <span id="coin-icon">🪙</span>
+        <!-- Coin SVG container - Made larger (w-48 h-48) -->
+        <div id="coin-display" class="w-48 h-48 mx-auto mb-10 flex items-center justify-center text-6xl bg-gradient-to-br from-yellow-400 to-yellow-600 text-white rounded-full shadow-xl border-4 border-yellow-700 cursor-pointer transform hover:scale-105 transition-all duration-300 ease-in-out" onclick="coinToss()">
+            <!-- SVG representation of the Indian 2 Rupee Coin -->
+            <svg id="coin-svg" width="100%" height="100%" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="48" fill="url(#coinGradient)" stroke="#DAA520" stroke-width="2"/>
+                <defs>
+                    <linearGradient id="coinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FFD700" />
+                        <stop offset="100%" stop-color="#FFA500" />
+                    </linearGradient>
+                </defs>
+                <!-- Text for the coin's side (changes between Heads/Tails) - Adjusted font size and y position -->
+                <text id="coin-side-text" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="28" font-weight="bold" fill="#8B4513"></text>
+            </svg>
         </div>
 
-        <button id="tossButton" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+        <button id="tossButton" class="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-4 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-75 active:scale-95">
             Toss the Coin!
         </button>
 
-        <p id="resultDisplay" class="mt-8 text-2xl font-semibold text-gray-700">
+        <p id="resultDisplay" class="mt-10 text-3xl font-extrabold text-gray-800 opacity-0">
             <!-- Result will be displayed here -->
-        </p>
-
-        <p class="mt-4 text-gray-500 text-sm">
-            Click the button to see if it's Heads or Tails!
         </p>
     </div>
 
@@ -41,46 +82,72 @@
         // Get references to HTML elements
         const tossButton = document.getElementById('tossButton');
         const resultDisplay = document.getElementById('resultDisplay');
-        const coinIcon = document.getElementById('coin-icon');
+        const coinDisplay = document.getElementById('coin-display'); // Reference to the coin container
+        const coinSvg = document.getElementById('coin-svg'); // Reference to the SVG element
+        const coinSideText = document.getElementById('coin-side-text'); // Reference to the side text inside SVG
 
         /**
          * Simulates a coin toss and updates the display.
          */
         function coinToss() {
-            // Disable the button during the toss animation
+            // Prevent multiple rapid tosses
+            if (tossButton.disabled) {
+                return;
+            }
+
+            // Disable the button and coin during the toss animation
             tossButton.disabled = true;
-            resultDisplay.textContent = "Tossing...";
-            coinIcon.textContent = "🔄"; // Show a spinning icon
+            coinDisplay.style.pointerEvents = 'none'; // Disable clicks on coin
+
+            resultDisplay.textContent = ""; // Clear previous result
+            resultDisplay.classList.remove('result-animated'); // Remove animation class for re-triggering
+            void resultDisplay.offsetWidth; // Trigger reflow to restart animation
+
+            // Temporarily hide the coin text and apply spin animation to the SVG
+            coinSideText.style.opacity = '0';
+            coinSvg.classList.add('coin-spinning');
 
             // Simulate a short delay for the "toss" animation
             setTimeout(() => {
                 // Generate a random number (0 or 1)
-                // 0 will represent Tails, 1 will represent Heads
                 const result = Math.floor(Math.random() * 2); // Generates 0 or 1
 
                 let tossResult;
                 if (result === 0) {
                     tossResult = "Tails";
-                    coinIcon.textContent = "🟡"; // Example: Yellow circle for Tails
+                    coinSideText.textContent = "TAILS"; // Display "TAILS" directly
+                    coinDisplay.style.backgroundColor = '#fcd34d'; /* Tailwind yellow-400 */
+                    coinDisplay.style.borderColor = '#b45309'; /* Darker yellow for border */
                 } else {
                     tossResult = "Heads";
-                    coinIcon.textContent = "🔵"; // Example: Blue circle for Heads
+                    coinSideText.textContent = "HEADS"; // Display "HEADS" directly
+                    coinDisplay.style.backgroundColor = '#60a5fa'; /* Tailwind blue-400 */
+                    coinDisplay.style.borderColor = '#1d4ed8'; /* Darker blue for border */
                 }
 
                 // Update the display with the result
-                resultDisplay.textContent = `The coin landed on: ${tossResult}!`;
+                resultDisplay.textContent = `It's ${tossResult}!`;
+                resultDisplay.classList.add('result-animated'); // Add animation class for result text
 
-                // Re-enable the button
+                // Show coin text and remove spin animation
+                coinSideText.style.opacity = '1';
+                coinSvg.classList.remove('coin-spinning');
+
+                // Re-enable the button and coin
                 tossButton.disabled = false;
-            }, 1000); // 1 second delay
+                coinDisplay.style.pointerEvents = 'auto'; // Re-enable clicks on coin
+            }, 1500); // Increased delay for more pronounced animation
         }
 
         // Add event listener to the toss button
         tossButton.addEventListener('click', coinToss);
 
-        // Initial state for the coin icon
-        coinIcon.textContent = "🪙";
+        // Initial state setup (coin text is empty)
+        coinSideText.textContent = ""; // Start with empty text on the coin
         resultDisplay.textContent = "Ready to toss!";
+        resultDisplay.classList.add('opacity-100'); // Make initial result text visible
+        coinDisplay.style.backgroundColor = '#fcd34d'; // Initial coin container color
+        coinDisplay.style.borderColor = '#b45309'; // Initial coin container border color
     </script>
 </body>
 </html>
